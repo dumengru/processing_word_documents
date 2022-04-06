@@ -17,7 +17,7 @@ class DocxModel():
         self.old_docx = Document(self.file_name)
         self.new_docx = Document()
 
-    def set_format(self):
+    def init_format(self):
         """
         按照配置设置文件格式
          1. 读取文件
@@ -32,6 +32,7 @@ class DocxModel():
         self.new_docx.styles["Normal"]._element.rPr.rFonts.set(qn("w:eastAsia"), WORD_SETTING["中文字体"])
         self.new_docx.styles["Normal"].font.size = Pt(WORD_SETTING["正文字号"])
         self.new_docx.styles["Normal"].font.bold = WORD_SETTING["正文加粗"]
+
 
         # 按照顺序读取并添加段落,图片和表格
         # 1. 计算表格和图片数量
@@ -146,10 +147,30 @@ class DocxModel():
                 head7 += 1
                 para.text = f"{head1}.{head2}.{head3}.{head4}.{head5}.{head6}.{head7} " + para.text
 
+    def set_format(self):
+        """
+        设置文本格式
+        """
+        # 最后调整段落格式
+        for para in self.new_docx.paragraphs:
+            if para.style.name == "Normal":
+                para.paragraph_format.space_before = 1
+                para.paragraph_format.space_after = 1
+                # para.paragraph_format.line_spacing = 0            # 段间
+                para.paragraph_format.first_line_indent = Cm(0.88)     # 首行缩进
+            elif para.style.name == "Heading 1":                    # 标题居中对齐
+                para.style.paragraph_format.alignment = ALIGNMENT_DICT[0]
+            # 设置标题字体
+            elif para.style.name.startswith("Heading"):
+                for run in para.runs:
+                    run.font.name = WORD_SETTING["英文字体"]
+                    run._element.rPr.rFonts.set(qn("w:eastAsia"), WORD_SETTING["中文字体"])
+
     def run(self):
-        self.set_format()   # 调整格式
+        self.init_format()   # 调整格式
         self.add_number()   # 修改标题样式
-        self.new_docx.save(f"out_{self.file_name}")
+        self.set_format()   # 
+        self.new_docx.save(f"标准文档_{self.file_name}")
 
 
 def word_tip():
@@ -161,6 +182,7 @@ def word_tip():
         "2. word内容全部按正文书写\n",
         "3. 一级标题文字前添加双$$标识 $一级标题$\n",
         "4. 图片和表格上方添加双$$标识 $图片$ $表格$",
+        "5. 列表前添加双$$标识 $列表$"
     )
     print(WORD_SETTING)
     print(
